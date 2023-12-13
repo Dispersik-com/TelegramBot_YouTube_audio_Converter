@@ -82,7 +82,7 @@ class YoutubeDownloader(MediaProcessor):
             return False
 
     def get_description(self):
-        # self.youtube_obj.streams.first()
+        self.youtube_obj.streams.first()
         return self.youtube_obj.description
 
     def get_video_length(self):
