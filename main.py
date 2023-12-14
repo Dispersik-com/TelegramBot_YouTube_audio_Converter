@@ -3,8 +3,9 @@ import telebot
 from MyToken import TOKEN
 from utils.Logger import Logger, MiddlewareLogger, logging
 from utils.handlers.database_handler import DatabaseHandler
-from utils.handlers.message_handler import StateMachine, MessageHandler
+from utils.handlers.message_handler import MessageHandler
 from bot_logic.state_graph import state_graph
+from bot_logic.state_machine import StateMachine
 
 
 logger = Logger('bot.log')

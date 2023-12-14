@@ -83,7 +83,8 @@ class YoutubeDownloader(MediaProcessor):
 
     def get_description(self):
         self.youtube_obj.streams.first()
-        return self.youtube_obj.description
+        description = self.youtube_obj.description
+        return description
 
     def get_video_length(self):
         """
@@ -123,8 +124,10 @@ class YoutubeDownloader(MediaProcessor):
         return result
 
     def get_timetamps(self):
-        desc = self.get_description()
-        return self.parse_description(desc)
+        description = self.get_description()
+        if description is None:
+            return None
+        return self.parse_description(description)
 
 
 class VideoConverter(MediaProcessor):

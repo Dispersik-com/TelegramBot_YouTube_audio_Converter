@@ -12,15 +12,19 @@ state_graph = {
     },
     'Video with song': {
         'text': 'Send me a link to a video with a song, and I will convert it to a file.\n\nWaiting for a link...',
-        'command': 'wait_url',
+        'command': 'wait_url_from_song',
         'options': [
+            'Download',
             'Start over'
         ]
     },
     'Video with timestamps': {
         'text': 'Send me a link to a video with song timestamps in the description.\n\nWaiting for a link...',
-        'command': 'wait_url',
+        'command': 'wait_url_video_with_timestamps',
         'options': [
+            'Download All',
+            'Select',
+            'Set Your Own',
             'Start over'
         ]
     },

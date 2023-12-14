@@ -27,22 +27,6 @@ This bot was developed using the following technologies:
 - `pytube` v15.0.0
 - `SQLAlchemy` v2.0.20
 
-Please note that development of this bot is currently on hold, but during the development, the following issues have been identified:
-
-1. **Problem with Description Retrieval:**
-   - In `venv/lib/python3.10/site-packages/pytube/cipher.py` on line 411:
-     - Old: `transform_plan_raw = find_object_from_startpoint(raw_code, match.span()[1] - 1)`
-     - New: `transform_plan_raw = js`
-
-   - In `venv/lib/python3.10/site-packages/pytube/parser.py` on line 159:
-     - Old: `func_regex = re.compile(r"function\([^)]*\)") - probably
-     - New: `func_regex = re.compile(r"function\([^)]?\)"`
-
-2. **Problem with Video Access:**
-   - In `venv/lib/python3.10/site-packages/pytube/innertube.py` on line 223:
-     - Old: `def __init__(self, client='ANDROID_MUSIC', use_oauth=False, allow_cache=True)`
-     - New: `def __init__(self, client='WEB', use_oauth=False, allow_cache=True)`
-
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

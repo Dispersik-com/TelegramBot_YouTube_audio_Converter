@@ -3,11 +3,9 @@ import re
 
 from utils.media_tools import YoutubeDownloader, VideoConverter, is_youtube_url
 from utils.handlers.handle_markup import handle_markup
+from bot_logic.report_messages import report_text
 
-ErrorMessage = """
-"We apologize, but an error occurred! It will be fixed shortly.
- \n\nPlease try again later or use a different link.
-"""
+language = "EN"
 
 
 class CommandHandler:
@@ -28,11 +26,20 @@ class CommandHandler:
         self.bot = bot
         self.db = database_handler
 
-    def handle_wait_url(self, user):
+    def handle_wait_url_from_song(self, user):
         chat_id = user.chat_id
 
         self.bot.register_next_step_handler_by_chat_id(int(chat_id),
-                                                       NextStepHandler.wait_url,
+                                                       NextStepHandler.wait_url_song,
+                                                       self.bot,
+                                                       self.db,
+                                                       user)
+
+    def handle_wait_url_video_with_timestamps(self, user):
+        chat_id = user.chat_id
+
+        self.bot.register_next_step_handler_by_chat_id(int(chat_id),
+                                                       NextStepHandler.wait_url_video_with_timestamps,
                                                        self.bot,
                                                        self.db,
                                                        user)
@@ -57,7 +64,7 @@ class CommandHandler:
 
             return
 
-        self.bot.send_message(chat_id, ErrorMessage)
+        self.bot.send_message(chat_id, report_text[language]["error"])
 
     def handle_download_all(self, user):
         SubCommand.multiple_download(user, self.db, self.bot)
@@ -91,31 +98,42 @@ class NextStepHandler:
     """
 
     @staticmethod
-    def wait_url(message, bot, db, user):
-        chat_id = user.chat_id
-        if is_youtube_url(message.text):
-            url = message.text
+    def decorator_wait_url(func):
+        def wrapper(*args, **kwargs):
+            message, bot, db, user = args
+            chat_id = user.chat_id
+            if is_youtube_url(message.text):
+                url = message.text
 
-            if user.state == 'Video with song':
-                options = ['Download', 'Start over']
-                handle_markup(bot, chat_id, 'Choose an action', options)
+                func(*args, **kwargs)
 
-            elif user.state == 'Video with timestamps':
-                options = ['Download All', 'Select', 'Set Your Own', 'Start over']
+                if SubCommand.save_url(db, user, url) is not True:
+                    bot.send_message(chat_id, report_text[language]["error"])
+            else:
+                bot.send_message(user.chat_id, report_text[language]["invalid_link"])
+                # handle_markup(bot, int(user.chat_id), '', [''])
+            return
+        return wrapper
 
-                tracklist = SubCommand.find_songs_in_description(url)
+    @staticmethod
+    @decorator_wait_url
+    def wait_url_song(url, bot, db, user):
+        pass
 
-                if SubCommand.save_tracklist(db, user, tracklist):
-                    tracklist_text = f"Found songs: \n\n{SubCommand.format_tracklist_to_text(tracklist)}"
-                    handle_markup(bot, chat_id, tracklist_text, options)
-                else:
-                    bot.send_message(user.chat_id, ErrorMessage)
+    @staticmethod
+    @decorator_wait_url
+    def wait_url_video_with_timestamps(url, bot, db, user):
 
-            if SubCommand.save_url(db, user, url) is not True:
-                bot.send_message(user.chat_id, ErrorMessage)
+        tracklist = SubCommand.find_songs_in_description(url)
+        if tracklist is None:
+            bot.send_message(user.chat_id, report_text[language]["not_found"])
 
+        if SubCommand.save_tracklist(db, user, tracklist):
+            tracklist_text = f"Found songs: \n\n{SubCommand.format_tracklist_to_text(tracklist)}"
+            bot.send_message(user.chat_id, tracklist_text)
         else:
-            bot.send_message(user.chat_id, "Invalid link")
+            bot.send_message(user.chat_id, report_text[language]["error"])
+            # handle_markup(bot, user.chat_id, text, ["Download Selected", "Start over"])
 
     @staticmethod
     def wait_choice_songs(message, bot, db, user):
@@ -131,11 +149,12 @@ class NextStepHandler:
 
             selected_songs = list(filter(lambda x: songs.index(x) + 1 in selected_song_indices, songs))
 
-            report_text = "You have selected: \n\n" + SubCommand.format_tracklist_to_text(selected_songs)
+            report = (report_text[language]["info_selected"] +
+                      SubCommand.format_tracklist_to_text(selected_songs))
 
-            handle_markup(bot, chat_id, report_text, ["Download Selected", "Start over"])
+            handle_markup(bot, chat_id, report, ["Download Selected", "Start over"])
         else:
-            bot.send_message(chat_id, 'No timestamps found')
+            bot.send_message(chat_id, report_text[language]["not_found"])
 
     @staticmethod
     def wait_timecodes(message, bot, db, user):
@@ -151,15 +170,15 @@ class NextStepHandler:
                 db.set_songs(session, user.id, timecodes)
                 session.close()
 
-                report_text = "The video will be split into the following segments: \n\n" + SubCommand.format_tracklist_to_text(
-                    timecodes)
+                report = (report_text[language]["info_segments"] +
+                          SubCommand.format_tracklist_to_text(timecodes))
 
-                handle_markup(bot, chat_id, report_text, ["Download All", "Start over"])
+                handle_markup(bot, chat_id, report, ["Download All", "Start over"])
 
             else:
-                bot.send_message(chat_id, 'Exceeds video length')
+                bot.send_message(chat_id, report_text[language]["exceeds_video"])
         else:
-            bot.send_message(chat_id, 'No timestamps found')
+            bot.send_message(chat_id, report_text[language]["not_found"])
 
 
 class SubCommand:
@@ -199,7 +218,7 @@ class SubCommand:
             db.create_parameters(session, user.id)
             db.set_songs(session, user.id, tracklist)
             session.close()
-        except Exception as e:
+        except Exception:
             return False
         return True
 
@@ -256,7 +275,7 @@ class SubCommand:
 
             return
 
-        bot.send_message(chat_id, ErrorMessage)
+        bot.send_message(chat_id, report_text[language]["error"])
 
     @staticmethod
     def has_time_exceeding(time_list, target_time):
