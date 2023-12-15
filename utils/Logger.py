@@ -1,3 +1,4 @@
+import copy
 import logging
 import time
 
@@ -27,6 +28,7 @@ class MiddlewareLogger:
         self.log_prefix = log_prefix
         self.excluded_methods = set(excluded_methods) if excluded_methods is not None else set()
         self.debug = debug
+        self.format_arguments = dict()
 
     def __getattr__(self, name):
         if name.startswith('__') and name.endswith('__'):
@@ -38,9 +40,14 @@ class MiddlewareLogger:
 
     def wrap_method(self, method, name):
         def wrapped(*args, **kwargs):
+            formatted_args = self.format_args(args)
+            formatted_kwargs = self.format_kwargs(kwargs)
+
             try:
-                logging.info(f"{self.log_prefix}: '{name}' with args: {args}, kwargs: {kwargs}")
+                logging.info(f"{self.log_prefix}: '{name}' with args: {formatted_args}, kwargs: {formatted_kwargs}")
+
                 result = method(*args, **kwargs)
+
                 if self.debug:
                     if result is not None:
                         logging.info(f"'{name}' returned --> {result}")
@@ -54,3 +61,17 @@ class MiddlewareLogger:
 
         return wrapped
 
+    def format_args(self, args):
+        formatted_args = [self.perform_format_argument(arg, self.format_arguments.get(arg.__class__.__name__, lambda x: x)) for arg in args]
+        return formatted_args
+
+    def format_kwargs(self, kwargs):
+        formatted_kwargs = {key: self.perform_format_argument(value, self.format_arguments.get(value.__class__.__name__, lambda x: x)) for key, value in kwargs.items()}
+        return formatted_kwargs
+
+    def add_format_argument_func(self, class_name, format_func):
+        self.format_arguments[class_name] = format_func
+        return self
+
+    def perform_format_argument(self, argument: object, format_func):
+        return format_func(argument)

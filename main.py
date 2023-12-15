@@ -17,7 +17,7 @@ database_handler = MiddlewareLogger(
                 logger=logger,
                 debug=False,
                 excluded_methods=['Session', 'close']
-                )
+                ).add_format_argument_func('Session', lambda x: f"Session: {hash(x)}")
 
 choice_machine = StateMachine(state_graph)
 message_handler = MessageHandler(choice_machine, bot, database_handler)
