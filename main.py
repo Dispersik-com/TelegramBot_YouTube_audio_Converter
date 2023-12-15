@@ -16,12 +16,11 @@ database_handler = MiddlewareLogger(
                 log_prefix='Request to db',
                 logger=logger,
                 debug=False,
-                excluded_methods=['Session']
+                excluded_methods=['Session', 'close']
                 )
 
 choice_machine = StateMachine(state_graph)
 message_handler = MessageHandler(choice_machine, bot, database_handler)
-
 
 @bot.message_handler(content_types=['text'])
 def handle_incoming_message(message):
