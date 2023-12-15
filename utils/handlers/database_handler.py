@@ -80,6 +80,15 @@ class DatabaseHandler:
         return user if user is not None else None
 
     @staticmethod
+    def set_user_language(session, user_id: int, language: str):
+        user = session.query(User).filter_by(id=user_id).first()
+        if user:
+            user.language = language
+            session.commit()
+            return True
+        return False
+
+    @staticmethod
     def update_state(session, user_id: int, new_state: str):
         """
         Update the state of a user in the database.

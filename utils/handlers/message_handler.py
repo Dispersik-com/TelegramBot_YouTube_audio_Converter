@@ -1,6 +1,7 @@
 import copy
 from utils.handlers.command_handler import CommandHandler
 from utils.handlers.handle_markup import handle_markup
+from bot_logic.report_messages import Languages
 
 
 class MessageHandler:
@@ -38,7 +39,14 @@ class MessageHandler:
                                                   message.from_user.last_name,
                                                   state='/start')
 
-        state = self.state_machine.get_state(message.text)
+        if user.language is None or message.text == 'Select language':
+            handle_markup(self.bot, message.chat.id,
+                          'Please, select language', Languages)
+            await self.handle_command('select_language', user)
+            session.close()
+            return
+
+        state = self.state_machine.get_state(message.text, language=user.language)
 
         if state is not None:
             command = state.get('command')

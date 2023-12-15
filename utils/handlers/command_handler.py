@@ -3,9 +3,7 @@ import re
 
 from utils.media_tools import YoutubeDownloader, VideoConverter, is_youtube_url
 from utils.handlers.handle_markup import handle_markup
-from bot_logic.report_messages import report_text
-
-language = "EN"
+from bot_logic.report_messages import report_text, Languages
 
 
 class CommandHandler:
@@ -25,6 +23,15 @@ class CommandHandler:
         """
         self.bot = bot
         self.db = database_handler
+
+    def handle_select_language(self, user):
+        chat_id = user.chat_id
+
+        self.bot.register_next_step_handler_by_chat_id(int(chat_id),
+                                                       NextStepHandler.wait_select_language,
+                                                       self.bot,
+                                                       self.db,
+                                                       user)
 
     def handle_wait_url_from_song(self, user):
         chat_id = user.chat_id
@@ -46,6 +53,7 @@ class CommandHandler:
 
     def handle_download(self, user):
         chat_id = user.chat_id
+        language = user.language
 
         downloader = YoutubeDownloader(user.url, f'{chat_id}_videos')
         local_video_file_name = downloader.download()
@@ -69,11 +77,11 @@ class CommandHandler:
     def handle_download_all(self, user):
         SubCommand.multiple_download(user, self.db, self.bot)
 
-    def handle_choice_songs(self, user):
+    def handle_select_songs(self, user):
         chat_id = user.chat_id
 
         self.bot.register_next_step_handler_by_chat_id(int(chat_id),
-                                                       NextStepHandler.wait_choice_songs,
+                                                       NextStepHandler.wait_select_songs,
                                                        self.bot,
                                                        self.db,
                                                        user)
@@ -101,6 +109,7 @@ class NextStepHandler:
     def decorator_wait_url(func):
         def wrapper(*args, **kwargs):
             message, bot, db, user = args
+            language = user.language
             chat_id = user.chat_id
             if is_youtube_url(message.text):
                 url = message.text
@@ -123,7 +132,7 @@ class NextStepHandler:
     @staticmethod
     @decorator_wait_url
     def wait_url_video_with_timestamps(url, bot, db, user):
-
+        language = user.language
         tracklist = SubCommand.find_songs_in_description(url)
         if tracklist is None:
             bot.send_message(user.chat_id, report_text[language]["not_found"])
@@ -136,8 +145,24 @@ class NextStepHandler:
             # handle_markup(bot, user.chat_id, text, ["Download Selected", "Start over"])
 
     @staticmethod
-    def wait_choice_songs(message, bot, db, user):
+    def wait_select_language(message, bot, db, user):
         chat_id = int(user.chat_id)
+        language = "EN"
+        if message.text in Languages:
+            session = db.Session()
+            if db.set_user_language(session, user.id, message.text):
+                handle_markup(bot, chat_id, report_text[message.text]['successfully'], ['/start'])
+            else:
+                bot.send_message(chat_id, report_text[language]['error'])
+            session.close()
+            return
+        else:
+            handle_markup(bot, chat_id, report_text[language]['not_found_language'], ['Select language'])
+
+    @staticmethod
+    def wait_select_songs(message, bot, db, user):
+        chat_id = int(user.chat_id)
+        language = user.language
 
         selected_song_indices = list(map(int, re.findall(r'\d+', message.text)))
 
@@ -159,6 +184,7 @@ class NextStepHandler:
     @staticmethod
     def wait_timecodes(message, bot, db, user):
         chat_id = int(user.chat_id)
+        language = user.language
 
         timecodes = YoutubeDownloader.parse_description(message.text)
 
@@ -252,6 +278,7 @@ class SubCommand:
     @staticmethod
     def multiple_download(user, db, bot, only_selected_songs=None):
         chat_id = user.chat_id
+        language = user.language
 
         songs_with_timecodes = SubCommand.get_songs_by_user(user, db)
 

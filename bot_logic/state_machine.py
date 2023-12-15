@@ -1,4 +1,3 @@
-
 class StateMachine:
     """
     Class for navigating state graphs and managing state transitions.
@@ -12,36 +11,39 @@ class StateMachine:
         """
         self.state_graph = state_graph
 
-    def has_next(self, state, next_state):
+    def has_next(self, state, next_state, language="EN"):
         """
         Check if there's a valid transition from the current state to the next state.
 
         :param state: Current state.
         :param next_state: Potential next state.
+        :param language: Language parameter (default is "EN").
 
         :return: True if the transition is allowed, False otherwise.
         """
-        return next_state in self.state_graph[state].get('options')
+        return next_state in self.state_graph[language][state].get('options')
 
-    def state_exists(self, state):
+    def state_exists(self, state, language="EN"):
         """
         Check if the given state exists in the state graph.
 
         :param state: State to check.
+        :param language: Language parameter (default is "EN").
 
         :return: True if the state exists, False otherwise.
         """
-        return state in self.state_graph.keys()
+        return state in self.state_graph[language].keys()
 
-    def get_state(self, state_name):
+    def get_state(self, state_name, language="EN"):
         """
         Get the state details for a given state name.
 
         :param state_name: Name of the state.
+        :param language: Language parameter (default is "EN").
 
         :return: State information as a dictionary.
         """
-        state = self.state_graph.get(state_name)
+        state = self.state_graph[language].get(state_name)
         if state is None:
             return
         state['state_name'] = state_name

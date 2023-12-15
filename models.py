@@ -12,7 +12,7 @@ class User(Base):
     chat_id = Column(String(12), nullable=False)
     first_name = Column(String(40), nullable=False)
     last_name = Column(String(40))
-    # language = Column(String(2))
+    language = Column(String(2), nullable=True)
     state = Column(String(100))
     previous_state = Column(String(100))
     url = Column(String(150))

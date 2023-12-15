@@ -22,6 +22,7 @@ database_handler = MiddlewareLogger(
 choice_machine = StateMachine(state_graph)
 message_handler = MessageHandler(choice_machine, bot, database_handler)
 
+
 @bot.message_handler(content_types=['text'])
 def handle_incoming_message(message):
     user_info = f"{message.from_user.first_name} {message.from_user.last_name}"
