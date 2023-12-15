@@ -1,7 +1,7 @@
 import copy
 from utils.handlers.command_handler import CommandHandler
 from utils.handlers.handle_markup import handle_markup
-from bot_logic.report_messages import Languages
+from bot_communication_logic.report_messages import Languages
 
 
 class MessageHandler:
