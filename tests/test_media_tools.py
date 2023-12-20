@@ -4,9 +4,10 @@ import unittest
 from unittest.mock import MagicMock
 from utils.media_tools import YoutubeDownloader, VideoConverter
 
+
 class TestYoutubeDownloader(unittest.TestCase):
     def setUp(self):
-        self.test_video_url = 'https://www.youtube.com/watch?v=test_video'
+        self.test_video_url = "https://www.youtube.com/watch?v=Rg-dPBmY1rc&ab_channel=PanasonicEurope"
         self.output_folder = tempfile.mkdtemp()
         self.youtube_downloader = YoutubeDownloader(self.test_video_url, self.output_folder)
         self.mocked_yt = MagicMock()
@@ -41,20 +42,22 @@ class TestYoutubeDownloader(unittest.TestCase):
             ("01:02 Song 1\n03:15 Song 2\n00:59 Song 3",
              [['00:59', 'Song 3'], ['01:02', 'Song 1'], ['03:15', 'Song 2']]),
             ("No Timecode", []),
-            ("04:30", []),
-            ("05:45\\nAnother Song", []),
+            ("04:30", [['04:30', 'unknown_timestamp_1']]),
+            ("05:45\\nAnother Song", [['05:45', 'unknown_timestamp_1']]),
             ("06:15 Yet Another Song", [['06:15', 'Yet Another Song']]),
             ("01:02 Song 1\n00:59 Song 3\n03:15 Song 2",
              [['00:59', 'Song 3'], ['01:02', 'Song 1'], ['03:15', 'Song 2']]),
+            ("01:02\n\n03:15 Song 2", [['01:02', 'unknown_timestamp_1'], ['03:15', 'Song 2']]),
         ]
 
         for description, expected_result in test_cases:
-            self.assertEqual(YoutubeDownloader.parse_description(description), expected_result)
+            with self.subTest(description=description):
+                self.assertEqual(YoutubeDownloader.parse_description(description), expected_result)
 
     def test_get_timestamps(self):
         test_description = "00:00:00 First Song\n00:03:45 Second Song"
         self.mocked_yt.description = test_description
-        timestamps = self.youtube_downloader.get_timetamps()
+        timestamps = self.youtube_downloader.get_timestamps()
         expected_result = [['00:00:00', 'First Song'], ['00:03:45', 'Second Song']]
         self.assertEqual(timestamps, expected_result)
 

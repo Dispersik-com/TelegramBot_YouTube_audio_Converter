@@ -111,19 +111,17 @@ class YoutubeDownloader(MediaProcessor):
 
         result = []
 
-        for i in range(len(matches)):
-            timecode = matches[i][0]
-            song_name = clean_invalid_chars(matches[i][1] if matches[i][1] is not None else "")
-            if song_name:
-                result.append([timecode, song_name])
-            elif i < len(matches) - 1 and matches[i + 1][0] != timecode:
-                # Exclude entries with empty names if the next entry has a different timestamp
-                continue
+        for idx, match in enumerate(matches, start=1):
+            timecode = match[0]
+            print(match)
+            song_name = clean_invalid_chars(match[1] if match[1] is not '' else f"unknown_timestamp_{idx}")
+            result.append([timecode, song_name])
 
         result = sorted(result, key=lambda item: item[0])
+
         return result
 
-    def get_timetamps(self):
+    def get_timestamps(self):
         description = self.get_description()
         if description is None:
             return None

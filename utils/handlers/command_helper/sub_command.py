@@ -17,7 +17,7 @@ def format_tracklist_to_text(data):
 
 def find_songs_in_description(url):
     downloader = YoutubeDownloader(url)
-    tracklist = downloader.get_timetamps()
+    tracklist = downloader.get_timestamps()
     return tracklist
 
 
