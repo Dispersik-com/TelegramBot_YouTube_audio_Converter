@@ -1,12 +1,14 @@
 import asyncio
+import time
+
 import telebot
+
 from MyToken import TOKEN
 from utils.Logger import Logger, MiddlewareLogger, logging
 from utils.handlers.database_handler import DatabaseHandler
 from utils.handlers.message_handler import MessageHandler
 from bot_communication_logic.state_graph import state_graph
 from bot_communication_logic.state_machine import StateMachine
-
 
 logger = Logger('bot.log')
 bot = telebot.TeleBot(TOKEN)
@@ -36,10 +38,7 @@ def handle_incoming_message(message):
 
 
 if __name__ == '__main__':
-    try:
-        logging.info('-- Bot started --')
-        bot.infinity_polling()
-    except Exception as e:
-        raise e
-    finally:
-        database_handler.close()
+    logging.info('-- Bot started --')
+    bot.polling(none_stop=True)
+    database_handler.close()
+    bot.stop_bot()

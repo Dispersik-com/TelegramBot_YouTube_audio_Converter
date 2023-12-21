@@ -26,6 +26,7 @@ class TestDatabaseHandler(unittest.TestCase):
         session = db.Session()
         db.create_user(session, chat_id=1, first_name='John', last_name='Doe', state='active')
         user = db.get_user(session, user_id=1)
+        print(user.url)
         self.assertIsNotNone(user)
 
     def test_get_user_with_join(self):

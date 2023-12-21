@@ -41,14 +41,16 @@ class NextStepHandler:
         language = user.language
         tracklist = find_songs_in_description(url)
         if tracklist is None:
-            bot.send_message(user.chat_id, report_text[language]["not_found"])
+            handle_markup(bot, user.chat_id, report_text[language]["not_found_description"],
+                          report_text[language]["invalid_link_buttons"])
 
         if save_tracklist(db, user, tracklist):
-            tracklist_text = f"Found songs: \n\n{format_tracklist_to_text(tracklist)}"
+            tracklist_text = (f"{report_text[language]['found_songs']}: "
+                              f"\n\n{format_tracklist_to_text(tracklist)}")
             bot.send_message(user.chat_id, tracklist_text)
         else:
             handle_markup(bot, user.chat_id,  report_text[language]["error"],
-                          report_text[language]["select_songs_buttons"])
+                          report_text[language]["invalid_link_buttons"])
 
     @staticmethod
     def wait_select_language(message, bot, db, user):

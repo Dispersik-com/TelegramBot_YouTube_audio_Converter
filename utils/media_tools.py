@@ -2,11 +2,14 @@ import os
 import re
 import shutil
 import time
-
+import requests
 from moviepy.editor import VideoFileClip, AudioFileClip
 from pytube import YouTube
 from pytube.cli import on_progress
 import logging
+from bs4 import BeautifulSoup
+
+from pytube.exceptions import RegexMatchError, VideoUnavailable
 
 
 class MediaProcessor:
@@ -54,7 +57,19 @@ class YoutubeDownloader(MediaProcessor):
     def __init__(self, url, output_folder=None):
         super().__init__(output_folder)
         self.url = url
-        self.youtube_obj = YouTube(self.url)
+        self.youtube_obj = None
+
+        try:
+            self.youtube_obj = YouTube(self.url)
+        except RegexMatchError:
+            logging.error("Invalid URL format. Please provide a valid YouTube URL.")
+            self.url = None
+        except VideoUnavailable:
+            logging.error("The video is unavailable. Please check if it's private or deleted.")
+            self.url = None
+        except Exception as e:
+            self.url = None
+            logging.error(f"An error occurred: {e}")
 
     def download(self, track_progress=False):
         """
@@ -82,8 +97,10 @@ class YoutubeDownloader(MediaProcessor):
             return False
 
     def get_description(self):
-        self.youtube_obj.streams.first()
-        description = self.youtube_obj.description
+        # [YouTube_Object].description it's does't working
+        soup = BeautifulSoup(requests.get(self.url, cookies={'CONSENT': 'YES+1'}).text, 'html.parser')
+        pattern = re.compile('(?<=shortDescription":").*(?=","isCrawlable)')
+        description = pattern.findall(str(soup))[0].replace('\\n', '\n')
         return description
 
     def get_video_length(self):
@@ -113,8 +130,7 @@ class YoutubeDownloader(MediaProcessor):
 
         for idx, match in enumerate(matches, start=1):
             timecode = match[0]
-            print(match)
-            song_name = clean_invalid_chars(match[1] if match[1] is not '' else f"unknown_timestamp_{idx}")
+            song_name = clean_invalid_chars(match[1] if match[1] != '' else f"unknown_timestamp_{idx}")
             result.append([timecode, song_name])
 
         result = sorted(result, key=lambda item: item[0])
