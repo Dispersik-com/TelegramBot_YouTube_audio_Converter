@@ -32,7 +32,7 @@ def save_tracklist(db, user, tracklist):
     try:
         session = db.Session()
         db.create_parameters(session, user.id)
-        db.set_songs(session, user.id, tracklist)
+        db.update_songs(session, user.id, tracklist)
         session.close()
     except Exception:
         return False
@@ -51,26 +51,11 @@ def save_url(db, user, url):
     return True
 
 
-def get_songs_by_user(user, db):
-    session = db.Session()
-    songs_with_timecodes = db.get_songs(session, user.id)
-    session.close()
-    return songs_with_timecodes
-
-
-def get_selected_songs_by_user(user, db):
-    session = db.Session()
-    selected_songs = db.get_selected_songs(session, user.id)
-    session.close()
-    selected_songs = list(map(int, selected_songs))
-    return selected_songs
-
-
 def multiple_download(user, db, bot, only_selected_songs=None):
     chat_id = user.chat_id
     language = user.language
 
-    songs_with_timecodes = get_songs_by_user(user, db)
+    songs_with_timecodes = list(map(lambda x: (x.name, x.timecode), user.parameters.tracklist))
 
     downloader = YoutubeDownloader(url=user.url,
                                    output_folder=f'{chat_id}_videos')

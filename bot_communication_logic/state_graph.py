@@ -117,7 +117,7 @@ UA_state_graph = {
             'Почати спочатку'
         ]
     },
-    'Завантажити вибрані': {
+    'Завантажити обране': {
         'text': 'Процес розпочався...',
         'command': "download_selected",
         'options': [
@@ -148,7 +148,82 @@ UA_state_graph = {
     }
 }
 
+SV_state_graph = {
+    '/start': {
+        'text': "Hej, jag är en konverteringsbot. Du kan skicka mig en länk till en video eller en sång,"
+                " och jag kommer att konvertera den till en ljudfil och skicka den till dig. Dessutom kan jag"
+                " dela upp en video i separata segment baserat på tidpunkter som anges i beskrivningen och skicka dem till dig.",
+        'command': None,
+        'options': [
+            "Video med sång",
+            "Video med tidsstämplar",
+        ]
+    },
+    'Video med sång': {
+        'text': 'Skicka mig en länk till en video med en sång, och jag kommer att konvertera den till en fil.\n\nVäntar på en länk...',
+        'command': 'wait_url_from_song',
+        'options': [
+            'Ladda ner',
+            'Börja om'
+        ]
+    },
+    'Video med tidsstämplar': {
+        'text': 'Skicka mig en länk till en video med sångtidstämplar i beskrivningen.\n\nVäntar på en länk...',
+        'command': 'wait_url_video_with_timestamps',
+        'options': [
+            'Ladda ner allt',
+            'Välj',
+            'Ange egna',
+            'Börja om'
+        ]
+    },
+    'Ladda ner allt': {
+        'text': 'Processen har startat...',
+        'command': "download_all",
+        'options': [
+            'Börja om'
+        ]
+    },
+    'Välj': {
+        'text': 'Skriv låtnummer i formatet:\n\n "1, 2, 3..."',
+        'command': "select_songs",
+        'options': [
+            'Börja om'
+        ]
+    },
+    'Ladda ner valda': {
+        'text': 'Processen har startat...',
+        'command': "download_selected",
+        'options': [
+            'Börja om'
+        ]
+    },
+    'Ange egna': {
+        'text': 'Skriv dina tidsstämplar i formatet:\n\n "01:02 [låtnamn]\n 03:04 [låtnamn]\n "',
+        'command': "set_timecodes",
+        'options': [
+            'Börja om'
+        ]
+    },
+    'Ladda ner': {
+        'text': 'Laddar ner...',
+        'command': 'download',
+        'options': [
+            'Börja om'
+        ]
+    },
+    'Börja om': {
+        'text': 'Välj en åtgärd',
+        'command': 'back',
+        'options': [
+            "Video med sång",
+            "Video med tidsstämplar",
+        ]
+    }
+}
+
 state_graph = {
     "EN": EN_state_graph,
-    "UA": UA_state_graph
+    "UA": UA_state_graph,
+    "SV": SV_state_graph
 }

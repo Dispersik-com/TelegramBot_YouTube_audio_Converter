@@ -19,13 +19,14 @@ class NextStepHandler:
             if is_youtube_url(message.text):
                 url = message.text
 
-                func(*args, **kwargs)
+                func(url, bot, db, user)
 
                 if save_url(db, user, url) is not True:
                     bot.send_message(chat_id, report_text[language]["error"])
             else:
-                bot.send_message(user.chat_id, report_text[language]["invalid_link"])
-                # handle_markup(bot, int(user.chat_id), '', [''])
+                handle_markup(bot, user.chat_id,
+                              report_text[language]["invalid_link"],
+                              report_text[language]['invalid_link_buttons'])
             return
         return wrapper
 
@@ -46,8 +47,8 @@ class NextStepHandler:
             tracklist_text = f"Found songs: \n\n{format_tracklist_to_text(tracklist)}"
             bot.send_message(user.chat_id, tracklist_text)
         else:
-            bot.send_message(user.chat_id, report_text[language]["error"])
-            # handle_markup(bot, user.chat_id, text, ["Download Selected", "Start over"])
+            handle_markup(bot, user.chat_id,  report_text[language]["error"],
+                          report_text[language]["select_songs_buttons"])
 
     @staticmethod
     def wait_select_language(message, bot, db, user):
@@ -55,7 +56,7 @@ class NextStepHandler:
         language = "EN"
         if message.text in Languages:
             session = db.Session()
-            if db.set_user_language(session, user.id, message.text):
+            if db.update_user_language(session, user.id, message.text):
                 handle_markup(bot, chat_id, report_text[message.text]['successfully'], ['/start'])
             else:
                 bot.send_message(chat_id, report_text[language]['error'])
@@ -73,7 +74,7 @@ class NextStepHandler:
 
         if selected_song_indices:
             session = db.Session()
-            db.set_selected_songs(session, user.id, selected_song_indices)
+            db.create_selected_songs(session, user.id, selected_song_indices)
             songs = db.get_songs(session, user.id)
             session.close()
 
@@ -82,7 +83,7 @@ class NextStepHandler:
             report = (report_text[language]["info_selected"] +
                       format_tracklist_to_text(selected_songs))
 
-            handle_markup(bot, chat_id, report, ["Download Selected", "Start over"])
+            handle_markup(bot, chat_id, report, report_text[language]["select_songs_buttons"])
         else:
             bot.send_message(chat_id, report_text[language]["not_found"])
 
@@ -98,13 +99,13 @@ class NextStepHandler:
 
             if has_time_exceeding(timecodes, video_length) is not True:
                 session = db.Session()
-                db.set_songs(session, user.id, timecodes)
+                db.update_songs(session, user.id, timecodes)
                 session.close()
 
                 report = (report_text[language]["info_segments"] +
                           format_tracklist_to_text(timecodes))
 
-                handle_markup(bot, chat_id, report, ["Download All", "Start over"])
+                handle_markup(bot, chat_id, report, report_text[language]["select_songs_buttons"])
 
             else:
                 bot.send_message(chat_id, report_text[language]["exceeds_video"])

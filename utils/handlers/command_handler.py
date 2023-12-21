@@ -67,7 +67,7 @@ class CommandHandler:
         multiple_download(user, self.db, self.bot)
 
     def handle_download_selected(self, user):
-        selected_songs = get_selected_songs_by_user(user, self.db)
+        selected_songs = user.parameters.selected_songs # get_selected_songs_by_user(user, self.db)
         multiple_download(user, self.db, self.bot, only_selected_songs=selected_songs)
 
     # command with next step
