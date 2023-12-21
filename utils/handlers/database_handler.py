@@ -1,38 +1,12 @@
 from sqlalchemy import create_engine, inspect
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, joinedload
 from models import Base, User, Parameters, Songs
 import json
 
 
-# Define the DatabaseHandler class for working with the database
-class DatabaseHandler:
-    _instance = None
-
-    # Constructor of the class (implements the Singleton pattern)
-    def __new__(cls, db_url: str):
-        """
-        Create a new instance of the DatabaseHandler if it doesn't exist.
-
-        :param db_url: The URL for the database.
-        """
-        if cls._instance is None:
-            cls._instance = super(DatabaseHandler, cls).__new__(cls)
-            cls._instance.db_url = db_url
-            cls._instance.engine = create_engine(db_url)
-            cls._instance.Session = sessionmaker(bind=cls._instance.engine)
-            if not inspect(cls._instance.engine).has_table("Users"):
-                cls._instance.create_tables()
-        return cls._instance
-
-    # Method to create tables in the database
-    def create_tables(self):
-        """
-        Create database tables if they do not already exist.
-        """
-        Base.metadata.create_all(self.engine)
-
+class CreateMixin:
     @staticmethod
-    def add_user(session, chat_id: int, first_name: str, last_name: str, state: str) -> User:
+    def create_user(session, chat_id: int, first_name: str, last_name: str, state: str) -> User:
         """
         Add a new user to the database.
 
@@ -52,73 +26,6 @@ class DatabaseHandler:
         session.add(user)
         session.commit()
         return user
-
-    @staticmethod
-    def get_user(session, user_id: int):
-        """
-        Retrieve a user from the database by their ID.
-
-        :param session: SQLAlchemy session object.
-        :param user_id: ID of the user to retrieve.
-
-        :return: The User object if found, or None if not found.
-        """
-        user = session.query(User).filter_by(id=user_id).first()
-        return user if user is not None else None
-
-    @staticmethod
-    def get_user_by_chat_id(session, chat_id: int):
-        """
-        Retrieve a user from the database by their ID.
-
-        :param session: SQLAlchemy session object.
-        :param chat_id: ID of the user to retrieve.
-
-        :return: The User object if found, or None if not found.
-        """
-        user = session.query(User).filter_by(chat_id=chat_id).first()
-        return user if user is not None else None
-
-    @staticmethod
-    def set_user_language(session, user_id: int, language: str):
-        user = session.query(User).filter_by(id=user_id).first()
-        if user:
-            user.language = language
-            session.commit()
-            return True
-        return False
-
-    @staticmethod
-    def update_state(session, user_id: int, new_state: str):
-        """
-        Update the state of a user in the database.
-
-        :param session: SQLAlchemy session object.
-        :param user_id: ID of the user to update.
-        :param new_state: The new state to set for the user.
-        """
-        user = session.query(User).filter_by(id=user_id).first()
-        if user:
-            user.previous_state = user.state
-            user.state = new_state
-            session.commit()
-            return user
-        return False
-
-    @staticmethod
-    def get_parameters(session, user_id: int):
-        """
-        Get the parameters associated with a user.
-
-        :param session: SQLAlchemy session object.
-        :param user_id: ID of the user.
-
-        :return: Parameters object if found, or None.
-        """
-        if user_id:
-            parameters = session.query(Parameters).filter_by(user_id=user_id).first()
-            return parameters
-        return None
 
     @staticmethod
     def create_parameters(session, user_id: int, songs_format='mp3'):
@@ -147,7 +54,7 @@ class DatabaseHandler:
             return None
 
     @staticmethod
-    def update_sangs_format(session, user_id: int, new_format: str):
+    def create_sangs_format(session, user_id: int, new_format: str):
         """
         Update the songs format for a user's parameters.
 
@@ -167,7 +74,7 @@ class DatabaseHandler:
         return False
 
     @staticmethod
-    def set_selected_songs(session, user_id: int, selected_songs: list[int]):
+    def create_selected_songs(session, user_id: int, selected_songs: list[int]):
         """
         Set the selected songs for a user.
 
@@ -184,6 +91,59 @@ class DatabaseHandler:
             session.commit()
             return True
         return False
+
+
+class ReadMixin:
+    @staticmethod
+    def get_user(session, user_id: int):
+        """
+        Retrieve a user from the database by their ID.
+
+        :param session: SQLAlchemy session object.
+        :param user_id: ID of the user to retrieve.
+
+        :return: The User object if found, or None if not found.
+        """
+        user = session.query(User).filter_by(id=user_id).first()
+        return user if user is not None else None
+
+    @staticmethod
+    def get_user_by_chat_id(session, chat_id: int, join_parameters=False, join_songs=False):
+        """
+        Retrieve a user from the database by their ID.
+
+        :param session: SQLAlchemy session object.
+        :param chat_id: ID of the user to retrieve.
+
+        :return: The User object if found, or None if not found.
+        """
+        query = session.query(User)
+
+        if join_parameters:
+            query = query.options(joinedload(User.parameters))
+
+        user = query.filter_by(chat_id=chat_id).first()
+
+        if user and join_songs:
+            # Eager load the Songs relationship within Parameters
+            session.query(Parameters).join(Songs).filter(Parameters.user_id == user.id).all()
+
+        return user if user is not None else None
+
+    @staticmethod
+    def get_parameters(session, user_id: int):
+        """
+        Get the parameters associated with a user.
+
+        :param session: SQLAlchemy session object.
+        :param user_id: ID of the user.
+
+        :return: Parameters object if found, or None.
+        """
+        if user_id:
+            parameters = session.query(Parameters).filter_by(user_id=user_id).first()
+            return parameters
+        return None
 
     @staticmethod
     def get_selected_songs(session, user_id: int):
@@ -202,7 +162,55 @@ class DatabaseHandler:
         return []
 
     @staticmethod
-    def set_songs(session, user_id: int, songs: list[list[str, str]]) -> bool:
+    def get_songs(session, user_id: int):
+        """
+        Get the list of songs for a user.
+
+        :param session: SQLAlchemy session object.
+        :param user_id: ID of the user.
+
+        :return: List of songs: list[list[str, str]], or None if no parameters found.
+        """
+        parameters = DatabaseHandler.get_parameters(session, user_id)
+
+        if parameters:
+            songs = session.query(Songs).filter_by(Parameters_id=parameters.id).all()
+            song_list = [[song.timecode, song.name] for song in songs]
+            return song_list
+
+        return None
+
+
+class UpdateMixin:
+
+    @staticmethod
+    def update_user_language(session, user_id: int, language: str):
+        user = session.query(User).filter_by(id=user_id).first()
+        if user:
+            user.language = language
+            session.commit()
+            return True
+        return False
+
+    @staticmethod
+    def update_state(session, user_id: int, new_state: str):
+        """
+        Update the state of a user in the database.
+
+        :param session: SQLAlchemy session object.
+        :param user_id: ID of the user to update.
+        :param new_state: The new state to set for the user.
+        """
+        user = session.query(User).filter_by(id=user_id).first()
+        if user:
+            user.previous_state = user.state
+            user.state = new_state
+            session.commit()
+            return user
+        return False
+
+    @staticmethod
+    def update_songs(session, user_id: int, songs: list[list[str, str]]) -> bool:
         """
         Set the list of songs for a user.
 
@@ -232,24 +240,34 @@ class DatabaseHandler:
 
         return False
 
-    @staticmethod
-    def get_songs(session, user_id: int):
+
+# Define the DatabaseHandler class for working with the database
+class DatabaseHandler(CreateMixin, ReadMixin, UpdateMixin):
+
+    _instance = None
+    # Constructor of the class (implements the Singleton pattern)
+
+    def __new__(cls, db_url: str):
         """
-        Get the list of songs for a user.
+        Create a new instance of the DatabaseHandler if it doesn't exist.
 
-        :param session: SQLAlchemy session object.
-        :param user_id: ID of the user.
-
-        :return: List of songs: list[list[str, str]], or None if no parameters found.
+        :param db_url: The URL for the database.
         """
-        parameters = DatabaseHandler.get_parameters(session, user_id)
+        if cls._instance is None:
+            cls._instance = super(DatabaseHandler, cls).__new__(cls)
+            cls._instance.db_url = db_url
+            cls._instance.engine = create_engine(db_url)
+            cls._instance.Session = sessionmaker(bind=cls._instance.engine)
+            if not inspect(cls._instance.engine).has_table("Users"):
+                cls._instance.create_tables()
+        return cls._instance
+    # Method to create tables in the database
 
-        if parameters:
-            songs = session.query(Songs).filter_by(Parameters_id=parameters.id).all()
-            song_list = [[song.timecode, song.name] for song in songs]
-            return song_list
-
-        return None
+    def create_tables(self):
+        """
+        Create database tables if they do not already exist.
+        """
+        Base.metadata.create_all(self.engine)
 
     def close(self):
         """

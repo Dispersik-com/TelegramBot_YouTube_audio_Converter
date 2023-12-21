@@ -30,14 +30,17 @@ class MessageHandler:
         """
         session = self.database_handler.Session()
 
-        user = self.database_handler.get_user_by_chat_id(session, message.chat.id)
+        user = self.database_handler.get_user_by_chat_id(session,
+                                                         message.chat.id,
+                                                         join_parameters=True,
+                                                         join_songs=True)
 
         if not user:
-            user = self.database_handler.add_user(session,
-                                                  message.chat.id,
-                                                  message.from_user.first_name,
-                                                  message.from_user.last_name,
-                                                  state='/start')
+            user = self.database_handler.create_user(session,
+                                                     message.chat.id,
+                                                     message.from_user.first_name,
+                                                     message.from_user.last_name,
+                                                     state='/start')
 
         if user.language is None or message.text == 'Select language':
             handle_markup(self.bot, message.chat.id,

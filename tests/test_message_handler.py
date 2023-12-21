@@ -1,11 +1,10 @@
 import unittest
 from unittest.mock import Mock
-from utils.handlers.message_handler import StateMachine
+from bot_communication_logic.state_machine import StateMachine
 
 
 class TestStateMachine(unittest.TestCase):
     def setUp(self):
-        # Создаем экземпляр StateMachine с примером графа состояний
         self.state_machine = StateMachine({
             'state1': {'options': ['state2', 'state3'], 'command': 'cmd1', 'text': 'Text 1'},
             'state2': {'options': ['state1', 'state3'], 'command': 'cmd2', 'text': 'Text 2'},
