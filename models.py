@@ -16,7 +16,7 @@ class User(Base):
     state = Column(String(100))
     previous_state = Column(String(100))
     url = Column(String(150))
-    parameters = relationship('Parameters', backref='user')
+    parameters = relationship('Parameters', backref='user', uselist=False)
 
 
 class Parameters(Base):
@@ -25,7 +25,7 @@ class Parameters(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('Users.id'))
     selected_songs = Column(String(150))
-    tracklist = relationship('Songs', backref='Parameters')
+    tracklist = relationship('Songs', backref='Parameters', uselist=True)
     sangs_format = Column(String(6))
 
 
