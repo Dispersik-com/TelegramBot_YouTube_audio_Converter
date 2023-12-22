@@ -23,6 +23,8 @@ class NextStepHandler:
 
                 if save_url(db, user, url) is not True:
                     bot.send_message(chat_id, report_text[language]["error"])
+                else:
+                    bot.send_message(chat_id, report_text[language]['next_action'])
             else:
                 handle_markup(bot, user.chat_id,
                               report_text[language]["invalid_link"],
@@ -42,7 +44,8 @@ class NextStepHandler:
         tracklist = find_songs_in_description(url)
         if tracklist is None:
             handle_markup(bot, user.chat_id, report_text[language]["not_found_description"],
-                          report_text[language]["invalid_link_buttons"])
+                          report_text[language]["not_found_description_buttons"])
+            return
 
         if save_tracklist(db, user, tracklist):
             tracklist_text = (f"{report_text[language]['found_songs']}: "

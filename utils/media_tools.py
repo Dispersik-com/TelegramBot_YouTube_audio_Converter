@@ -135,7 +135,7 @@ class YoutubeDownloader(MediaProcessor):
 
         result = sorted(result, key=lambda item: item[0])
 
-        return result
+        return result if result else None
 
     def get_timestamps(self):
         description = self.get_description()
@@ -244,6 +244,7 @@ class VideoConverter(MediaProcessor):
 
     def _timecode_to_int(self, timecode):
         time_parts = timecode.split(':')
+        total_seconds = 0
         if len(time_parts) == 2:
             minutes, seconds = map(int, time_parts)
             total_seconds = minutes * 60 + seconds

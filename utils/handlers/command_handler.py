@@ -1,3 +1,5 @@
+import json
+
 from utils.handlers.command_helper.sub_command import *
 from utils.handlers.command_helper.next_steps import NextStepHandler
 import functools
@@ -53,7 +55,7 @@ class CommandHandler:
 
             if os.path.exists(local_audio_file_name):
                 with open(local_audio_file_name, 'rb') as audio:
-                    self.bot.send_audio(chat_id, audio)
+                    self.bot.send_audio(chat_id, audio, timeout=20)
 
                 converter.clean_output_folder()
 
@@ -67,7 +69,7 @@ class CommandHandler:
         multiple_download(user, self.db, self.bot)
 
     def handle_download_selected(self, user):
-        selected_songs = user.parameters.selected_songs # get_selected_songs_by_user(user, self.db)
+        selected_songs = json.loads(user.parameters.selected_songs) # get_selected_songs_by_user(user, self.db)
         multiple_download(user, self.db, self.bot, only_selected_songs=selected_songs)
 
     # command with next step

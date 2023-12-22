@@ -56,30 +56,29 @@ def save_url(db, user, url):
 def multiple_download(user, db, bot, only_selected_songs=None):
     chat_id = user.chat_id
     language = user.language
+    try:
+        songs_with_timecodes = list(map(lambda x: (x.timecode, x.name), user.parameters.tracklist))
 
-    songs_with_timecodes = list(map(lambda x: (x.name, x.timecode), user.parameters.tracklist))
+        downloader = YoutubeDownloader(url=user.url,
+                                       output_folder=f'{chat_id}_videos')
 
-    downloader = YoutubeDownloader(url=user.url,
-                                   output_folder=f'{chat_id}_videos')
+        local_video_filename = downloader.download()
 
-    local_video_filename = downloader.download()
+        if os.path.exists(local_video_filename):
+            converter = VideoConverter(local_video_filename, f'{chat_id}_audios')
+            list_local_filename = converter.split_video_and_convert_to_audio(timecodes=songs_with_timecodes,
+                                                                             selected_songs=only_selected_songs)
+            if list_local_filename:
+                for audiofile in list_local_filename:
+                    with open(f"{chat_id}_audios/{audiofile}", 'rb') as audio:
+                        bot.send_audio(chat_id, audio, timeout=20)
 
-    if os.path.exists(local_video_filename):
-        converter = VideoConverter(local_video_filename, f'{chat_id}_audios')
-        list_local_filename = converter.split_video_and_convert_to_audio(timecodes=songs_with_timecodes,
-                                                                         selected_songs=only_selected_songs)
-
-        for audiofile in list_local_filename:
-            print(audiofile)
-            with open(f"{chat_id}_audios/{audiofile}", 'rb') as audio:
-                bot.send_audio(chat_id, audio)
-
+    except Exception as e:
+        bot.send_message(chat_id, report_text[language]["error"])
+        raise e
+    finally:
         downloader.clean_output_folder()
         converter.clean_output_folder()
-
-        return
-
-    bot.send_message(chat_id, report_text[language]["error"])
 
 
 def has_time_exceeding(time_list, target_time):
